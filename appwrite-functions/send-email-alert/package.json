@@ -1,0 +1,10 @@
+{
+  "name": "send-email-alert",
+  "version": "1.0.0",
+  "description": "Appwrite Function to send email alerts via SendGrid",
+  "main": "index.js",
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.0"
+  }
+}
+

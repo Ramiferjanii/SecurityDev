@@ -1,0 +1,12 @@
+# Gmail SMTP Configuration
+# 1. Go to Google Account > Security > 2-Step Verification > App Passwords
+# 2. Create a new App Password named "Bluefort"
+# 3. Copy the 16-character password
+
+EMAIL_PROVIDER=smtp
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=ramiferjani80@gmail.com
+SMTP_PASSWORD=snfpsjpmewdfgoqv
+SMTP_SECURE=false
+FROM_EMAIL=ramiferjani80@gmail.com
