@@ -1,20 +1,32 @@
-'use client';
-
+"use client";
 import { useState } from 'react';
-import { PlaceholdersAndVanishInput } from '@/components/ui/placeholders-and-vanish-input';
-import { Button } from '@/components/ui/stateful-button';
+import { PlaceholdersAndVanishInput } from "@/components/ui/placeholders-and-vanish-input";
+import { Button } from "@/components/ui/stateful-button";
+import { AnimatePresence, motion } from "motion/react";
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     subject: '',
-    message: ''
+    message: '',
   });
+
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [field]: e.target.value });
+  };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
+    // Hide any previous notifications
+    setNotification(null);
+
     try {
       const response = await fetch('/api/contact', {
         method: 'POST',
@@ -22,34 +34,91 @@ export default function ContactForm() {
         body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        console.log('Form submitted successfully');
+        setNotification({
+          type: 'success',
+          message: '✓ Message sent successfully! We\'ll get back to you soon.',
+        });
+        // Clear form
         setFormData({ name: '', email: '', subject: '', message: '' });
-        alert('Message sent successfully!');
+        
+        // Auto-hide notification after 5 seconds
+        setTimeout(() => setNotification(null), 5000);
       } else {
-        console.error('Failed to submit form');
-        alert('Failed to send message. Please try again.');
+        setNotification({
+          type: 'error',
+          message: `✗ ${data.error || 'Failed to send message. Please try again.'}`,
+        });
       }
     } catch (error) {
-       console.error('Error submitting form:', error);
-       alert('An error occurred.');
+      setNotification({
+        type: 'error',
+        message: '✗ Network error. Please check your connection and try again.',
+      });
     }
   };
 
-  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({ ...prev, [field]: e.target.value }));
-  };
-
   return (
-    <div className="w-full mb-12 relative z-20">
-      <div className="bg-blue-900/10 backdrop-blur-md border border-blue-500/20 rounded-2xl p-8 text-center max-w-2xl mx-auto hover:bg-blue-900/20 transition-colors">
-        <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/30">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-        </div>
-        <h2 className="text-2xl font-bold text-white mb-2">Contact Support</h2>
-        <p className="text-neutral-300 mb-8 max-w-md mx-auto">
+    <div className="relative">
+      {/* Notification Toast */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className={`
+              fixed top-8 left-1/2 -translate-x-1/2 z-50
+              px-6 py-4 rounded-2xl backdrop-blur-xl border shadow-2xl
+              flex items-center gap-3 min-w-[320px] max-w-md
+              ${notification.type === 'success' 
+                ? 'bg-green-500/10 border-green-500/30 text-green-200' 
+                : 'bg-red-500/10 border-red-500/30 text-red-200'
+              }
+            `}
+          >
+            {/* Icon */}
+            <div className={`
+              w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0
+              ${notification.type === 'success' 
+                ? 'bg-green-500/20' 
+                : 'bg-red-500/20'
+              }
+            `}>
+              {notification.type === 'success' ? (
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+            </div>
+
+            {/* Message */}
+            <p className="font-medium flex-1">{notification.message}</p>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setNotification(null)}
+              className="text-neutral-400 hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Form Content */}
+      <div className="bg-black/20 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl">
+        <h2 className="text-3xl font-bold text-white mb-2">Get in Touch</h2>
+        <p className="text-neutral-300 mb-8">
           Submit specific problems directly to our engineering team.
         </p>
 

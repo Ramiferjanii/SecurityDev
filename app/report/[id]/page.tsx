@@ -20,11 +20,14 @@ export default function ReportDetailPage() {
   const [voting, setVoting] = useState(false);
   const [comment, setComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
 
   useEffect(() => {
     checkAuth();
     if (reportId) {
         fetchReportWithRetry();
+        fetchComments();
     }
   }, [reportId]);
 
@@ -53,6 +56,21 @@ export default function ReportDetailPage() {
       retries--;
     }
     setLoading(false);
+  };
+
+  const fetchComments = async () => {
+    setLoadingComments(true);
+    try {
+      const response = await fetch(`/api/reports/${reportId}/comments`);
+      const data = await response.json();
+      if (data.success) {
+        setComments(data.comments || []);
+      }
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    } finally {
+      setLoadingComments(false);
+    }
   };
 
   const handleVote = async (voteType: 'upvote' | 'downvote') => {
@@ -98,7 +116,7 @@ export default function ReportDetailPage() {
 
       if (response.ok) {
         setComment('');
-        fetchReportWithRetry();
+        fetchComments(); // Refresh comments list
       }
     } catch (error) {
       console.error('Error posting comment:', error);
@@ -290,11 +308,37 @@ export default function ReportDetailPage() {
               </div>
             )}
 
-            {/* Comments List (Placeholder for now as per original) */}
+            {/* Comments List */}
             <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-white/5 border border-white/5 text-center text-neutral-500 text-sm">
-                No comments yet. Be the first to verify this report.
-              </div>
+              {loadingComments ? (
+                <div className="text-center text-neutral-400 py-8">
+                  <LoaderFour text="Loading comments..." />
+                </div>
+              ) : comments.length === 0 ? (
+                <div className="p-4 rounded-xl bg-white/5 border border-white/5 text-center text-neutral-500 text-sm">
+                  No comments yet. Be the first to verify this report.
+                </div>
+              ) : (
+                comments.map((c: any) => (
+                  <div key={c.id} className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-300 font-bold text-xs uppercase flex-shrink-0">
+                        {(c.userName || 'A').charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-white font-medium text-sm">{c.userName || 'Anonymous'}</span>
+                          <span className="text-neutral-500 text-xs">•</span>
+                          <span className="text-neutral-500 text-xs">
+                            {new Date(c.createdAt).toLocaleDateString()} {new Date(c.createdAt).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <p className="text-neutral-300 text-sm whitespace-pre-wrap break-words">{c.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

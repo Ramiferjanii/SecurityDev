@@ -22,12 +22,59 @@ export async function POST(
       );
     }
 
-    // For now, return success (comments collection can be added later)
-    // In production, create a comments collection and store comments there
+    if (!DATABASE_ID || !process.env.APPWRITE_REPORTS_COLLECTION_ID) {
+      return NextResponse.json(
+        { error: 'Database not configured' },
+        { status: 500 }
+      );
+    }
+
+    // Fetch the current report to get existing comments
+    const report = await databases.getDocument(
+      DATABASE_ID,
+      process.env.APPWRITE_REPORTS_COLLECTION_ID,
+      reportId
+    );
+
+    // Get existing comments or initialize empty array
+    const existingComments = report.comments || [];
     
+    // Parse existing comments from JSON strings
+    const parsedComments = existingComments.map((c: string) => {
+      try {
+        return typeof c === 'string' ? JSON.parse(c) : c;
+      } catch {
+        return c;
+      }
+    });
+
+    // Create new comment object
+    const newComment = {
+      id: `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      userId,
+      userName,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Convert all comments to JSON strings for Appwrite
+    const commentsAsStrings = [...parsedComments, newComment].map(c => 
+      typeof c === 'string' ? c : JSON.stringify(c)
+    );
+
+    // Update the report with the new comment
+    await databases.updateDocument(
+      DATABASE_ID,
+      process.env.APPWRITE_REPORTS_COLLECTION_ID,
+      reportId,
+      {
+        comments: commentsAsStrings
+      }
+    );
+
     return NextResponse.json({
       success: true,
-      message: 'Comment posted (feature in development)',
+      comment: newComment,
     });
   } catch (error: any) {
     console.error('Comment API Error:', error);
@@ -45,10 +92,32 @@ export async function GET(
   try {
     const { id: reportId } = await params;
 
-    // Return empty comments for now
+    if (!DATABASE_ID || !process.env.APPWRITE_REPORTS_COLLECTION_ID) {
+      return NextResponse.json(
+        { error: 'Database not configured' },
+        { status: 500 }
+      );
+    }
+
+    // Fetch the report to get comments
+    const report = await databases.getDocument(
+      DATABASE_ID,
+      process.env.APPWRITE_REPORTS_COLLECTION_ID,
+      reportId
+    );
+
+    // Parse comments from JSON strings
+    const comments = (report.comments || []).map((c: string) => {
+      try {
+        return typeof c === 'string' ? JSON.parse(c) : c;
+      } catch {
+        return c;
+      }
+    });
+
     return NextResponse.json({
       success: true,
-      comments: [],
+      comments,
     });
   } catch (error: any) {
     console.error('Get Comments API Error:', error);
@@ -58,4 +127,5 @@ export async function GET(
     );
   }
 }
+
 
