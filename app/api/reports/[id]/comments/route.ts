@@ -8,10 +8,10 @@ const COMMENTS_COLLECTION_ID = process.env.APPWRITE_COMMENTS_COLLECTION_ID || ''
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: reportId } = params;
+    const { id: reportId } = await params;
     const body = await request.json();
     const { userId, userName, content } = body;
 
@@ -40,10 +40,10 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: reportId } = params;
+    const { id: reportId } = await params;
 
     // Return empty comments for now
     return NextResponse.json({

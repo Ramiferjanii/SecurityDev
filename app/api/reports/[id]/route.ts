@@ -7,10 +7,10 @@ const REPORTS_COLLECTION_ID = process.env.APPWRITE_REPORTS_COLLECTION_ID || proc
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (!DATABASE_ID || !REPORTS_COLLECTION_ID) {
       return NextResponse.json(

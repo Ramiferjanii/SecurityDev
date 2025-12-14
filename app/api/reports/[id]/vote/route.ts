@@ -4,12 +4,10 @@ import { voteOnReport } from '@/lib/reports';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> | { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Handle both Promise and direct params (Next.js 15+ compatibility)
-    const resolvedParams = params instanceof Promise ? await params : params;
-    const { id } = resolvedParams;
+    const { id } = await params;
     
     if (!id) {
       return NextResponse.json(
